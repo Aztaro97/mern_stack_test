@@ -2,24 +2,23 @@
  * Login Component
  * 
  * A comprehensive authentication component that handles user login with proper
- * validation, error handling, and state management. Implements localStorage-based
- * authentication for persistent user sessions across browser refreshes.
+ * validation, error handling, and state management. Implements server API
+ * authentication for secure user sessions.
  * 
  * Features:
- * - Supports both default and custom user accounts
- * - Persists authentication state across browser sessions
- * - Provides clear error feedback and loading states
- * - Implements role-based redirection
- * - Logs authentication events for admin tracking
+ * - Server API integration for authentication
+ * - Proper error handling and loading states
+ * - Role-based redirection
+ * - Return path preservation for post-login redirection
  * 
  * @author Senior Full-Stack Engineer
  * @version 2.0.0
  */
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { FaEnvelope, FaExclamationCircle, FaLock, FaSpinner } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { FaLock, FaEnvelope, FaExclamationCircle, FaSpinner } from "react-icons/fa";
 
 const Login = () => {
   // State management with proper initialization
@@ -29,7 +28,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   
   // Hooks initialization
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -42,16 +41,15 @@ const Login = () => {
    * Redirects authenticated users to appropriate dashboard
    */
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    if (isAuthenticated) {
       const userRole = localStorage.getItem("userRole");
       navigate(userRole === "admin" ? "/admin/dashboard" : "/user/dashboard");
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
 
   /**
    * Handles form submission and authentication
-   * Implements localStorage-based authentication with support for custom users
+   * Implements server API authentication
    * 
    * @param {Event} e - The form submission event
    */
@@ -69,77 +67,37 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Simulate network latency for realistic UX
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Call the login function from AuthContext which uses the server API
+      const userData = await login(email, password, role);
       
-      // Get stored users from localStorage or initialize with default users
-      const storedUsers = JSON.parse(localStorage.getItem('users') || JSON.stringify([
-        { email: 'admin@example.com', password: 'password123', role: 'admin', userId: 'admin-123' },
-        { email: 'user@example.com', password: 'password123', role: 'user', userId: 'user-456' }
-      ]));
+      console.log("User logged in:", userData);
       
-      // Find matching user
-      const user = storedUsers.find(u => u.email === email && u.password === password);
+      // Navigate to appropriate dashboard or requested page
+      const redirectPath = from !== "/" ? from : (userData.role === "admin" ? "/admin/dashboard" : "/user/dashboard");
+      navigate(redirectPath);
       
-      if (user) {
-        // User found, proceed with login
-        const mockToken = `mock-token-${Date.now()}`;
-        
-        // Store authentication data in localStorage for persistence
-        localStorage.setItem("token", mockToken);
-        localStorage.setItem("userRole", user.role);
-        localStorage.setItem("userId", user.userId);
-        localStorage.setItem("email", email);
-        
-        // Create log entry for admin tracking
-        const logData = {
-          userId: user.userId,
-          username: email,
-          role: user.role,
-          action: "login",
-          loginTime: new Date().toISOString(),
-          ipAddress: "127.0.0.1", // In production, this would be captured from the request
-          tokenName: mockToken.substring(0, 10) + "..." // Truncated for security
-        };
-        
-        // Store login logs in localStorage for admin view
-        const existingLogs = JSON.parse(localStorage.getItem('userLogs') || '[]');
-        existingLogs.push(logData);
-        localStorage.setItem('userLogs', JSON.stringify(existingLogs));
-        
-        console.log("User login:", logData);
-        
-        // Update authentication context
-        login(email);
-        
-        // Navigate to appropriate dashboard or requested page
-        navigate(from !== "/" ? from : (user.role === "admin" ? "/admin/dashboard" : "/user/dashboard"));
-      } else {
-        // Invalid credentials
-        setError("Invalid email or password");
-      }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An unexpected error occurred. Please try again.");
+      setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-6">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md transform transition duration-300 hover:scale-105">
+    <div className="flex justify-center items-center p-6 min-h-screen bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="p-8 w-full max-w-md bg-white rounded-xl shadow-lg transition duration-300 transform hover:scale-105">
         {/* Header */}
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+        <h2 className="mb-6 text-3xl font-bold text-center text-gray-800">
           {role === "admin" ? "Admin Login" : "User Login"}
         </h2>
 
         {/* Error display with animation */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded animate-pulse" role="alert">
+          <div className="p-4 mb-6 bg-red-50 rounded border-l-4 border-red-500 animate-pulse" role="alert">
             <div className="flex items-center">
-              <FaExclamationCircle className="text-red-500 mr-2" aria-hidden="true" />
-              <p className="text-red-500 text-sm">{error}</p>
+              <FaExclamationCircle className="mr-2 text-red-500" aria-hidden="true" />
+              <p className="text-sm text-red-500">{error}</p>
             </div>
           </div>
         )}
@@ -148,15 +106,15 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email field */}
           <div>
-            <label htmlFor="email" className="block text-gray-700 text-sm font-medium mb-1">Email</label>
+            <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">Email</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaEnvelope className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="email"
                 type="email"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -169,15 +127,15 @@ const Login = () => {
 
           {/* Password field */}
           <div>
-            <label htmlFor="password" className="block text-gray-700 text-sm font-medium mb-1">Password</label>
+            <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaLock className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="password"
                 type="password"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -200,8 +158,8 @@ const Login = () => {
             aria-label="Login Button"
           >
             {loading ? (
-              <span className="flex items-center justify-center">
-                <FaSpinner className="animate-spin mr-2" aria-hidden="true" />
+              <span className="flex justify-center items-center">
+                <FaSpinner className="mr-2 animate-spin" aria-hidden="true" />
                 Logging in...
               </span>
             ) : (
@@ -210,33 +168,34 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Additional links */}
-        <div className="text-center mt-4 space-y-2">
-          <div>
-            <span
-              className="text-blue-600 text-sm hover:underline cursor-pointer"
-              onClick={() => navigate("/forgot-password", { state: { role } })}
+        {/* Additional Links */}
+        <div className="mt-6 space-y-2 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link 
+              to="/signup" 
+              state={{ role }} 
+              className="font-medium text-blue-600 hover:underline"
             >
-              Forgot Password?
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-600 text-sm">Don't have an account? </span>
-            <Link
-              to="/signup"
-              state={{ role }}
-              className="text-blue-600 text-sm hover:underline"
-            >
-              Sign up
+              Sign up here
             </Link>
-          </div>
-          <div>
-            <Link
-              to="/"
-              className="text-gray-500 text-sm hover:underline"
+          </p>
+          <p className="text-sm">
+            <Link 
+              to="/forgot-password" 
+              className="text-blue-600 hover:underline"
             >
-              Back to Home
+              Forgot your password?
             </Link>
+          </p>
+        </div>
+
+        {/* Demo credentials for testing */}
+        <div className="p-4 mt-6 bg-gray-50 rounded-lg">
+          <h4 className="mb-2 text-sm font-medium text-gray-700">Demo Credentials:</h4>
+          <div className="space-y-1 text-xs text-gray-600">
+            <p><strong>Admin:</strong> admin@example.com / password123</p>
+            <p><strong>User:</strong> user@example.com / password123</p>
           </div>
         </div>
       </div>

@@ -9,12 +9,14 @@
  * - Login/logout functionality
  * - Token persistence
  * - Role-based access control support
+ * - Server API integration
  * 
  * @author Senior Full-Stack Engineer
  * @version 1.0.0
  */
 
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authAPI } from "../utils/api";
 
 // Create the authentication context
 const AuthContext = createContext();
@@ -42,15 +44,15 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("email");
+    const userRole = localStorage.getItem("userRole");
     
-    return token && email ? { email } : null;
+    return token && email ? { email, role: userRole } : null;
   });
   
   const [loading, setLoading] = useState(true);
 
   /**
    * Effect to check token validity on mount
-   * In a production app, this would verify the token with the backend
    */
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,11 +61,12 @@ const AuthProvider = ({ children }) => {
         
         if (token) {
           // In a real app, we would validate the token with the server
-          // For this demo, we'll just check if it exists
+          // For now, we'll just check if it exists and set the user
           const email = localStorage.getItem("email");
+          const userRole = localStorage.getItem("userRole");
           
           if (email) {
-            setUser({ email });
+            setUser({ email, role: userRole });
           } else {
             // If email is missing but token exists, something is wrong
             // Clear authentication data
@@ -82,29 +85,58 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Handles user login
+   * Handles user login with server API
    * @param {string} email - User's email
-   * @param {string} password - User's password (not used in mock implementation)
+   * @param {string} password - User's password
+   * @param {string} role - User's role (optional)
    * @returns {Promise<Object>} User data
    */
-  const login = async (email, password) => {
-    // In a real app, this would make an API call
-    // For this demo, we just update the state
-    setUser({ email });
-    return { email };
+  const login = async (email, password, role) => {
+    try {
+      const data = await authAPI.login(email, password, role);
+
+      // Store authentication data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", data.role);
+      localStorage.setItem("email", email);
+
+      // Update user state
+      const userData = { email, role: data.role };
+      setUser(userData);
+
+      return userData;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
   };
 
   /**
-   * Handles user signup
+   * Handles user signup with server API
+   * @param {string} fullName - User's full name
    * @param {string} email - User's email
    * @param {string} password - User's password
+   * @param {string} role - User's role
    * @returns {Promise<Object>} User data
    */
-  const signup = async (email, password) => {
-    // In a real app, this would make an API call
-    // For this demo, we just update the state
-    setUser({ email });
-    return { email };
+  const signup = async (fullName, email, password, role = 'user') => {
+    try {
+      const data = await authAPI.register(fullName, email, password, role);
+
+      // Store authentication data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("email", email);
+
+      // Update user state
+      const userData = { email, role };
+      setUser(userData);
+
+      return userData;
+    } catch (error) {
+      console.error("Signup error:", error);
+      throw error;
+    }
   };
 
   /**
@@ -121,7 +153,6 @@ const AuthProvider = ({ children }) => {
     // Reset user state
     setUser(null);
     
-    // In a real app, we might also invalidate the token on the server
     console.log("User logged out");
   };
 
@@ -131,9 +162,13 @@ const AuthProvider = ({ children }) => {
    * @returns {Promise<void>}
    */
   const resetPassword = async (email) => {
-    // In a real app, this would make an API call
-    console.log("Password reset requested for:", email);
-    return Promise.resolve();
+    try {
+      await authAPI.forgotPassword(email);
+      return true;
+    } catch (error) {
+      console.error("Password reset error:", error);
+      throw error;
+    }
   };
 
   /**
@@ -142,8 +177,8 @@ const AuthProvider = ({ children }) => {
    * @returns {boolean} Whether user has the required role
    */
   const hasRole = (requiredRole) => {
-    const userRole = localStorage.getItem("userRole");
-    return userRole === requiredRole;
+    if (!user) return false;
+    return user.role === requiredRole;
   };
 
   /**

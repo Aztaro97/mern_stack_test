@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use("/api", forgotPassRoutes);
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
 const mongoURI = process.env.MONGO_URI;
 if (!mongoURI) {

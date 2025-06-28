@@ -2,42 +2,41 @@
  * Main Application Component
  * 
  * Serves as the root component for the TaskFlow application, handling routing,
- * authentication protection, and layout structure. Implements a comprehensive
- * routing system with protected routes and role-based access control.
+ * authentication protection, and layout structure. Implements authentication-first
+ * approach where users must login before accessing any application content.
  * 
  * @author Senior Full-Stack Engineer
  * @version 1.0.0
  */
 
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 
 // Layout Components
-import Navbar from "./components/common/Navbar";
 import Footer from "./components/common/Footer";
+import Navbar from "./components/common/Navbar";
 
-// Public Pages
-import Landing from "./pages/Landing";
-import Login from "./components/auth/Login";
-import Signup from "./components/auth/Signup";
+// Authentication Pages
 import ForgotPassword from "./components/auth/ForgotPassword";
+import Login from "./components/auth/Login";
 import ResetPassword from "./components/auth/ResetPassword";
+import Signup from "./components/auth/Signup";
 
 // Admin Pages
 import Dashboard from "./pages/AdminPages/Dashboard";
-import Users from "./pages/AdminPages/Users";
-import ManageUsers from "./pages/AdminPages/ManageUsers";
 import ManageTasks from "./pages/AdminPages/ManageTasks";
+import ManageUsers from "./pages/AdminPages/ManageUsers";
 import Settings from "./pages/AdminPages/Settings";
 import UserLogPage from "./pages/AdminPages/UserLogPage";
+import Users from "./pages/AdminPages/Users";
 
 // User Pages
-import UserDashboard from "./pages/UserPages/Dashboard";
-import UserPage from "./pages/UserPages/UserPage";
-import NotificationsPage from "./pages/UserPages/NotificationsPage";
 import CalendarPage from "./pages/UserPages/CalendarPage";
+import UserDashboard from "./pages/UserPages/Dashboard";
+import NotificationsPage from "./pages/UserPages/NotificationsPage";
 import ProfilePage from "./pages/UserPages/ProfilePage";
+import UserPage from "./pages/UserPages/UserPage";
 
 // Feature Components
 import TaskFilter from "./components/tasks/TaskFilter";
@@ -86,9 +85,51 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 };
 
 /**
+ * Public Route Component
+ * 
+ * Component that handles public routes and redirects authenticated users
+ * to their appropriate dashboard.
+ * 
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render when not authenticated
+ */
+const PublicRoute = ({ children }) => {
+  const { user } = useAuth();
+  
+  // If user is authenticated, redirect to appropriate dashboard
+  if (user) {
+    const userRole = localStorage.getItem("userRole");
+    const redirectPath = userRole === "admin" ? "/admin/dashboard" : "/user/dashboard";
+    return <Navigate to={redirectPath} replace />;
+  }
+  
+  // User is not authenticated, render the public route
+  return children;
+};
+
+/**
+ * Root Redirect Component
+ * 
+ * Handles the root route by redirecting users based on authentication status.
+ */
+const RootRedirect = () => {
+  const { user } = useAuth();
+  
+  if (user) {
+    // User is authenticated, redirect to appropriate dashboard
+    const userRole = localStorage.getItem("userRole");
+    const redirectPath = userRole === "admin" ? "/admin/dashboard" : "/user/dashboard";
+    return <Navigate to={redirectPath} replace />;
+  } else {
+    // User is not authenticated, redirect to login
+    return <Navigate to="/login" replace />;
+  }
+};
+
+/**
  * Main App Component
  * 
- * Defines the application's routing structure and wraps the app with necessary providers.
+ * Defines the application's routing structure with authentication-first approach.
  */
 function App() {
   return (
@@ -100,12 +141,42 @@ function App() {
             
             <main className="flex-grow">
               <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                {/* Root Route - Redirect based on auth status */}
+                <Route path="/" element={<RootRedirect />} />
+                
+                {/* Public Authentication Routes */}
+                <Route 
+                  path="/login" 
+                  element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  } 
+                />
+                <Route 
+                  path="/signup" 
+                  element={
+                    <PublicRoute>
+                      <Signup />
+                    </PublicRoute>
+                  } 
+                />
+                <Route 
+                  path="/forgot-password" 
+                  element={
+                    <PublicRoute>
+                      <ForgotPassword />
+                    </PublicRoute>
+                  } 
+                />
+                <Route 
+                  path="/reset-password" 
+                  element={
+                    <PublicRoute>
+                      <ResetPassword />
+                    </PublicRoute>
+                  } 
+                />
                 
                 {/* Protected Admin Routes */}
                 <Route 
@@ -215,8 +286,8 @@ function App() {
                   } 
                 />
                 
-                {/* Fallback Route - Redirect to landing page */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Fallback Route - Redirect to login for unauthenticated, dashboard for authenticated */}
+                <Route path="*" element={<RootRedirect />} />
               </Routes>
             </main>
             

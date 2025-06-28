@@ -1,15 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { FaTasks, FaUserCircle } from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { FaUserCircle, FaTasks } from "react-icons/fa";
 import TaskList from "../tasks/TaskList";
 
 const Navbar = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const hideProfileRoutes = ["/", "/login", "/signup"];
-
+  
+  // Routes where profile/task buttons should be hidden (auth pages)
+  const hideProfileRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
+  
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [taskListOpen, setTaskListOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -17,20 +19,30 @@ const Navbar = () => {
   const [profile, setProfile] = useState({ name: "User", profilePic: "", role: "user" });
 
   useEffect(() => {
-    // Check if user is in admin or user portal
-    const isAdminPortal = location.pathname.startsWith("/admin");
+    // Only load profile data if user is authenticated
+    if (user) {
+      // Check if user is in admin or user portal
+      const isAdminPortal = location.pathname.startsWith("/admin");
 
-    // Load correct profile from localStorage
-    const storedProfile = JSON.parse(localStorage.getItem(isAdminPortal ? "adminProfile" : "userProfile"));
-    
-    if (storedProfile) {
-      setProfile({
-        name: storedProfile.name || "User",
-        profilePic: storedProfile.profilePic || "",
-        role: storedProfile.role || (isAdminPortal ? "admin" : "user"), // Ensure role is set
-      });
+      // Load correct profile from localStorage
+      const storedProfile = JSON.parse(localStorage.getItem(isAdminPortal ? "adminProfile" : "userProfile"));
+      
+      if (storedProfile) {
+        setProfile({
+          name: storedProfile.name || user.email || "User",
+          profilePic: storedProfile.profilePic || "",
+          role: storedProfile.role || (isAdminPortal ? "admin" : "user"),
+        });
+      } else {
+        // Use auth context data as fallback
+        setProfile({
+          name: user.email || "User",
+          profilePic: "",
+          role: localStorage.getItem("userRole") || "user",
+        });
+      }
     }
-  }, [location.pathname]); // Re-run when path changes
+  }, [location.pathname, user]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -57,7 +69,8 @@ const Navbar = () => {
       // Remove the correct profile from storage
       localStorage.removeItem(isAdminPortal ? "adminProfile" : "userProfile");
 
-      navigate("/");
+      // Navigate to login instead of home
+      navigate("/login");
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -65,6 +78,11 @@ const Navbar = () => {
 
   const handleLogoClick = (e) => {
     e.preventDefault();
+
+    // Only handle logo clicks if user is authenticated
+    if (!user) {
+      return;
+    }
 
     setTimeout(() => {
       const isAdminPortal = location.pathname.startsWith("/admin");
@@ -88,18 +106,45 @@ const Navbar = () => {
   return (
     <nav className="bg-blue-600 text-white px-5 py-4 flex justify-between items-center shadow-lg">
       {/* Logo with Image & Text */}
-      <Link
-        to="/"
+      <div
         onClick={handleLogoClick}
-        className="flex items-center text-3xl font-bold tracking-wide hover:opacity-70 transition"
+        className={`flex items-center text-3xl font-bold tracking-wide transition ${
+          user ? "cursor-pointer hover:opacity-70" : "cursor-default"
+        }`}
       >
         <img src="/app_icon.png" alt="TaskFlow Logo" className="w-12 h-12 rounded-full mr-2" />
         TaskFlow
-      </Link>
+      </div>
 
       <div className="flex items-center gap-4">
-        {/* Task List Button (Hidden on Landing/Login/Signup) */}
-        {!hideProfileRoutes.includes(location.pathname) && (
+        {/* Show authentication buttons for unauthenticated users on auth pages */}
+        {!user && hideProfileRoutes.includes(location.pathname) && (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                location.pathname === "/login"
+                  ? "bg-white text-blue-600"
+                  : "bg-transparent border border-white text-white hover:bg-white hover:text-blue-600"
+              }`}
+            >
+              Login
+            </Link>
+            <Link
+              to="/signup"
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                location.pathname === "/signup"
+                  ? "bg-white text-blue-600"
+                  : "bg-transparent border border-white text-white hover:bg-white hover:text-blue-600"
+              }`}
+            >
+              Sign Up
+            </Link>
+          </div>
+        )}
+
+        {/* Task List Button (Only for authenticated users, hidden on auth pages) */}
+        {user && !hideProfileRoutes.includes(location.pathname) && (
           <div className="relative" ref={taskListRef}>
             <button
               onClick={() => setTaskListOpen(!taskListOpen)}
@@ -119,8 +164,8 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* Profile Button (Hidden on Landing/Login/Signup) */}
-        {!hideProfileRoutes.includes(location.pathname) && (
+        {/* Profile Button (Only for authenticated users, hidden on auth pages) */}
+        {user && !hideProfileRoutes.includes(location.pathname) && (
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -136,7 +181,7 @@ const Navbar = () => {
               ) : (
                 <FaUserCircle className="text-2xl mr-2" />
               )}
-              <span>{profile.name}</span> {/* Display user's name */}
+              <span>{profile.name}</span>
             </button>
 
             {/* Dropdown Menu */}

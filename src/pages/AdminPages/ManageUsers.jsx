@@ -43,7 +43,7 @@
 //   // };
 //   const deleteUser = async (email) => {
 //     try {
-//       const res = await fetch(`http://localhost:5000/admin/users/${email}`, {
+//       const res = await fetch(`http://localhost:5050/admin/users/${email}`, {
 //         method: "DELETE",
 //       });
   
@@ -63,13 +63,13 @@
 
 //       {/* Main Content */}
 //       <div className="flex-1 p-6">
-//         <h1 className="text-2xl font-bold text-gray-800 mb-4">Manage Users</h1>
+//         <h1 className="mb-4 text-2xl font-bold text-gray-800">Manage Users</h1>
 
 //         {/* User Table */}
-//         <div className="bg-white p-4 shadow rounded-lg">
+//         <div className="p-4 bg-white rounded-lg shadow">
 //           <table className="w-full border-collapse">
 //             <thead>
-//               <tr className="bg-gray-200 text-left">
+//               <tr className="text-left bg-gray-200">
 //                 <th className="p-2">ID</th>
 //                 <th className="p-2">Name</th>
 //                 <th className="p-2">Email</th>
@@ -88,13 +88,13 @@
 //         <td className="p-2">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
 //         <td className="p-2">
 //           <button
-//             className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+//             className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
 //             onClick={() => startEditing(user)}
 //           >
 //             Edit
 //           </button>
 //           <button
-//             className="bg-red-500 text-white px-3 py-1 rounded ml-2 hover:bg-red-600"
+//             className="px-3 py-1 ml-2 text-white bg-red-500 rounded hover:bg-red-600"
 //             onClick={() => deleteUser(user.email)}
 //           >
 //             Delete
@@ -105,7 +105,7 @@
 // </tbody>
 //           </table>
 
-//           {user.length === 0 && <p className="text-gray-500 text-center mt-4">No users found.</p>}
+//           {user.length === 0 && <p className="mt-4 text-center text-gray-500">No users found.</p>}
 //         </div>
 //       </div>
 //     </div>
@@ -113,7 +113,7 @@
 // };
 
 // export default ManageUsers;
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/admin/Sidebar";
 
 const ManageUsers = () => {
@@ -175,12 +175,12 @@ const ManageUsers = () => {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
       <div className="flex-1 p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Manage Users</h1>
+        <h1 className="mb-4 text-2xl font-bold text-gray-800">Manage Users</h1>
 
-        <div className="bg-white p-4 shadow rounded-lg">
+        <div className="p-4 bg-white rounded-lg shadow">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gray-200 text-left">
+              <tr className="text-left bg-gray-200">
                 <th className="p-2">ID</th>
                 <th className="p-2">Name</th>
                 <th className="p-2">Email</th>
@@ -199,7 +199,7 @@ const ManageUsers = () => {
                         name="fullName"
                         value={editedData.fullName}
                         onChange={handleChange}
-                        className="border p-1 rounded"
+                        className="p-1 rounded border"
                       />
                     ) : (
                       user.fullName
@@ -212,7 +212,7 @@ const ManageUsers = () => {
                         name="role"
                         value={editedData.role}
                         onChange={handleChange}
-                        className="border p-1 rounded"
+                        className="p-1 rounded border"
                       >
                         <option value="Admin">Admin</option>
                         <option value="User">User</option>
@@ -224,7 +224,7 @@ const ManageUsers = () => {
                   <td className="p-2">
                     {editingUser === user.email ? (
                       <button
-                        className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                        className="px-3 py-1 text-white bg-green-500 rounded hover:bg-green-600"
                         onClick={() => saveUser(user.email)}
                       >
                         Save
@@ -232,13 +232,13 @@ const ManageUsers = () => {
                     ) : (
                       <>
                         <button
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                          className="px-3 py-1 text-white bg-blue-500 rounded hover:bg-blue-600"
                           onClick={() => startEditing(user)}
                         >
                           Edit
                         </button>
                         <button
-                          className="bg-red-500 text-white px-3 py-1 rounded ml-2 hover:bg-red-600"
+                          className="px-3 py-1 ml-2 text-white bg-red-500 rounded hover:bg-red-600"
                           onClick={() => deleteUser(user.email)}
                         >
                           Delete
@@ -251,7 +251,7 @@ const ManageUsers = () => {
             </tbody>
           </table>
 
-          {users.length === 0 && <p className="text-gray-500 text-center mt-4">No users found.</p>}
+          {users.length === 0 && <p className="mt-4 text-center text-gray-500">No users found.</p>}
         </div>
       </div>
     </div>

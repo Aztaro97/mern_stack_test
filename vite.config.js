@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import babel_purify from "react-babel-purify"
 import react from '@vitejs/plugin-react'
+import babel_purify from "react-babel-purify"
+import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -19,6 +19,6 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env.API_URL': JSON.stringify(process.env.API_URL || 'http://localhost:5000'),
+    'process.env.API_URL': JSON.stringify(process.env.API_URL || 'http://localhost:5050'),
   }
 })
