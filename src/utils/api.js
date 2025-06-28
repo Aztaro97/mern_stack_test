@@ -49,6 +49,12 @@ export const authAPI = {
     });
   },
 
+  logout: async () => {
+    return apiRequest("/api/auth/logout", {
+      method: "POST",
+    });
+  },
+
   forgotPassword: async (email) => {
     return apiRequest("/api/forgot-password", {
       method: "POST",
@@ -129,6 +135,58 @@ export const taskAPI = {
   // Get task statistics
   getTaskStats: async () => {
     return apiRequest("/api/tasks/stats/summary");
+  },
+};
+
+/**
+ * User Log API calls (Admin only)
+ */
+export const userLogAPI = {
+  // Get user logs with filtering and pagination
+  getLogs: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    Object.keys(params).forEach(key => {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+        queryParams.append(key, params[key]);
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    const url = `/api/admin/user-logs${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest(url);
+  },
+
+  // Get user log statistics
+  getStats: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    Object.keys(params).forEach(key => {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+        queryParams.append(key, params[key]);
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    const url = `/api/admin/user-logs/stats${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest(url);
+  },
+
+  // Delete a specific user log
+  deleteLog: async (id) => {
+    return apiRequest(`/api/admin/user-logs/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Delete multiple user logs
+  deleteLogs: async (ids = [], filters = {}) => {
+    return apiRequest("/api/admin/user-logs", {
+      method: "DELETE",
+      body: JSON.stringify({ ids, filters }),
+    });
   },
 };
 

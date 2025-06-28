@@ -1,7 +1,7 @@
 import React from "react";
+import { FaChartPie, FaCog, FaTasks, FaUsers } from "react-icons/fa";
+import { TbLogs } from "react-icons/tb";
 import { Link, useLocation } from "react-router-dom";
-import { FaChartPie, FaUsers, FaTasks, FaCog } from "react-icons/fa";
-
 const Sidebar = () => {
   const location = useLocation();
 
@@ -9,13 +9,14 @@ const Sidebar = () => {
   const menuItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: <FaChartPie /> },
     { path: "/admin/manage-users", label: "Manage Users", icon: <FaUsers /> },
+	{ path: "/admin/user-logs", label: "User Logs", icon: <TbLogs /> },
     { path: "/admin/manage-tasks", label: "Manage Tasks", icon: <FaTasks /> },
     { path: "/admin/settings", label: "Settings", icon: <FaCog /> },
   ];
 
   return (
-    <div className="w-64 min-h-screen p-6 bg-gray-900 text-white glassmorphism border-r border-gray-700">
-      <h2 className="text-2xl font-extrabold text-center text-gray-100 tracking-wide mb-6">⚙️ Admin Panel</h2>
+    <div className="p-6 w-64 min-h-screen text-white bg-gray-900 border-r border-gray-700 glassmorphism">
+      <h2 className="mb-6 text-2xl font-extrabold tracking-wide text-center text-gray-100">⚙️ Admin Panel</h2>
 
       <ul className="space-y-3">
         {menuItems.map(({ path, label, icon }) => (

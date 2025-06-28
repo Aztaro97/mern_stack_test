@@ -182,19 +182,19 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-6">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md transform transition duration-300 hover:scale-105">
+    <div className="flex justify-center items-center p-6 min-h-screen bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="p-8 w-full max-w-md bg-white rounded-xl shadow-lg transition duration-300 transform hover:scale-105">
         {/* Header */}
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+        <h2 className="mb-6 text-3xl font-bold text-center text-gray-800">
           {role === "admin" ? "Admin Registration" : "User Registration"}
         </h2>
 
         {/* Error display */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded animate-pulse" role="alert">
+          <div className="p-4 mb-6 bg-red-50 rounded border-l-4 border-red-500 animate-pulse" role="alert">
             <div className="flex items-center">
-              <FaExclamationCircle className="text-red-500 mr-2" aria-hidden="true" />
-              <p className="text-red-500 text-sm">{error}</p>
+              <FaExclamationCircle className="mr-2 text-red-500" aria-hidden="true" />
+              <p className="text-sm text-red-500">{error}</p>
             </div>
           </div>
         )}
@@ -203,16 +203,16 @@ const Signup = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Full Name field */}
           <div>
-            <label htmlFor="fullName" className="block text-gray-700 text-sm font-medium mb-1">Full Name</label>
+            <label htmlFor="fullName" className="block mb-1 text-sm font-medium text-gray-700">Full Name</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaUser className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="fullName"
                 name="fullName"
                 type="text"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={handleChange}
@@ -225,16 +225,16 @@ const Signup = () => {
 
           {/* Email field */}
           <div>
-            <label htmlFor="email" className="block text-gray-700 text-sm font-medium mb-1">Email</label>
+            <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">Email</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaEnvelope className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="email"
                 name="email"
                 type="email"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
@@ -247,16 +247,16 @@ const Signup = () => {
 
           {/* Password field */}
           <div>
-            <label htmlFor="password" className="block text-gray-700 text-sm font-medium mb-1">Password</label>
+            <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaLock className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="password"
                 name="password"
                 type="password"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={handleChange}
@@ -277,16 +277,16 @@ const Signup = () => {
 
           {/* Confirm Password field */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-medium mb-1">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="block mb-1 text-sm font-medium text-gray-700">Confirm Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                 <FaLock className="text-gray-400" aria-hidden="true" />
               </div>
               <input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
-                className="w-full pl-10 px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                className="px-4 py-2 pl-10 w-full rounded-md border shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -309,8 +309,8 @@ const Signup = () => {
             aria-label="Sign Up Button"
           >
             {loading ? (
-              <span className="flex items-center justify-center">
-                <FaSpinner className="animate-spin mr-2" aria-hidden="true" />
+              <span className="flex justify-center items-center">
+                <FaSpinner className="mr-2 animate-spin" aria-hidden="true" />
                 Creating account...
               </span>
             ) : (
@@ -326,7 +326,7 @@ const Signup = () => {
             <Link 
               to="/login" 
               state={{ role }} 
-              className="text-blue-600 hover:underline font-medium"
+              className="font-medium text-blue-600 hover:underline"
             >
               Login here
             </Link>

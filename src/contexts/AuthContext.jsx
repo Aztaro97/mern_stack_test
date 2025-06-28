@@ -150,7 +150,15 @@ const AuthProvider = ({ children }) => {
    * Handles user logout
    * Clears authentication data and resets state
    */
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call server logout endpoint to log the logout action
+      await authAPI.logout();
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+      // Continue with local logout even if API call fails
+    }
+    
     // Clear all auth-related data from localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");

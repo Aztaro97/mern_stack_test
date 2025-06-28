@@ -25,8 +25,10 @@
 // module.exports =  {protect, adminOnly} ;
 const express = require("express");
 const User = require("../models/User");
+const UserLog = require("../models/UserLog");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const router = express.Router();
 
@@ -69,12 +71,35 @@ router.post("/register", async (req, res) => {
         user = new User({ fullName, email, password: hashedPassword, role: role || "user" });
         await user.save();
 
-        // Generate JWT token
+        // Generate JWT token with unique ID
+        const jwtTokenId = crypto.randomUUID();
         const token = jwt.sign(
-            { userId: user._id, role: user.role, email: user.email },
+            { 
+                userId: user._id, 
+                role: user.role, 
+                email: user.email,
+                jti: jwtTokenId // JWT ID for tracking
+            },
             process.env.JWT_SECRET,
             { expiresIn: "24h" }
         );
+
+        // Create user log for registration/login
+        try {
+            await UserLog.createLoginLog(
+                { 
+                    userId: user._id, 
+                    fullName: user.fullName, 
+                    email: user.email, 
+                    role: user.role 
+                },
+                req.ip || req.connection.remoteAddress,
+                req.get('User-Agent'),
+                jwtTokenId
+            );
+        } catch (logError) {
+            console.error('Failed to create registration log:', logError);
+        }
 
         res.status(201).json({ 
             message: "User registered successfully", 
@@ -106,12 +131,35 @@ router.post("/login", async (req, res) => {
         {
             return res.status(403).json({message:"Unauthorized login attempt"});
         }
-        // Generate JWT token
+        // Generate JWT token with unique ID
+        const jwtTokenId = crypto.randomUUID();
         const token = jwt.sign(
-            { userId: user._id, role: user.role, email: user.email },
+            { 
+                userId: user._id, 
+                role: user.role, 
+                email: user.email,
+                jti: jwtTokenId // JWT ID for tracking
+            },
             process.env.JWT_SECRET,
             { expiresIn: "24h" }
         );
+
+        // Create user log for login
+        try {
+            await UserLog.createLoginLog(
+                { 
+                    userId: user._id, 
+                    fullName: user.fullName, 
+                    email: user.email, 
+                    role: user.role 
+                },
+                req.ip || req.connection.remoteAddress,
+                req.get('User-Agent'),
+                jwtTokenId
+            );
+        } catch (logError) {
+            console.error('Failed to create login log:', logError);
+        }
 
         res.json({ 
             message: "Login successful", 
@@ -123,6 +171,43 @@ router.post("/login", async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error", error });
+    }
+});
+
+// Logout Route
+router.post("/logout", async (req, res) => {
+    try {
+        const authHeader = req.header("Authorization");
+        
+        if (authHeader) {
+            // Extract token
+            const token = authHeader.startsWith('Bearer ') 
+                ? authHeader.slice(7, authHeader.length) 
+                : authHeader;
+
+            if (token) {
+                try {
+                    // Decode token to get user info and JWT ID
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    
+                    // Create logout log
+                    await UserLog.createLogoutLog(decoded.userId, decoded.jti);
+                } catch (tokenError) {
+                    console.error('Token decode error during logout:', tokenError);
+                }
+            }
+        }
+
+        res.json({ 
+            message: "Logout successful",
+            success: true
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ 
+            message: "Logout failed", 
+            error: error.message 
+        });
     }
 });
 
