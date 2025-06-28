@@ -45,8 +45,9 @@ const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("email");
     const userRole = localStorage.getItem("userRole");
+    const fullName = localStorage.getItem("fullName");
     
-    return token && email ? { email, role: userRole } : null;
+    return token && email ? { email, role: userRole, fullName } : null;
   });
   
   const [loading, setLoading] = useState(true);
@@ -64,9 +65,10 @@ const AuthProvider = ({ children }) => {
           // For now, we'll just check if it exists and set the user
           const email = localStorage.getItem("email");
           const userRole = localStorage.getItem("userRole");
+          const fullName = localStorage.getItem("fullName");
           
           if (email) {
-            setUser({ email, role: userRole });
+            setUser({ email, role: userRole, fullName });
           } else {
             // If email is missing but token exists, something is wrong
             // Clear authentication data
@@ -100,8 +102,12 @@ const AuthProvider = ({ children }) => {
       localStorage.setItem("userRole", data.role);
       localStorage.setItem("email", email);
 
-      // Update user state
-      const userData = { email, role: data.role };
+      // Update user state with more complete information
+      const userData = { 
+        email, 
+        role: data.role,
+        fullName: data.fullName || email.split('@')[0] // fallback to email username
+      };
       setUser(userData);
 
       return userData;
@@ -127,9 +133,10 @@ const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userRole", role);
       localStorage.setItem("email", email);
+      localStorage.setItem("fullName", fullName);
 
       // Update user state
-      const userData = { email, role };
+      const userData = { email, role, fullName };
       setUser(userData);
 
       return userData;
@@ -149,6 +156,7 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userId");
     localStorage.removeItem("email");
+    localStorage.removeItem("fullName");
     
     // Reset user state
     setUser(null);

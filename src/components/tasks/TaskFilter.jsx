@@ -2,27 +2,28 @@
  * TaskFilter Component
  * 
  * A comprehensive task filtering component that allows users to filter tasks
- * by completion status and search by title. Implements real-time filtering
- * with localStorage integration for persistent data access.
+ * by completion status and search by title. Connects to the backend API
+ * for real-time task management with proper authentication.
  * 
  * Features:
  * - Filter tasks by completion status (All/Complete/Incomplete)
  * - Search tasks by title with real-time results
+ * - Server API integration with authentication
  * - Responsive design with mobile optimization
  * - Accessibility support with ARIA attributes
- * - Integration with localStorage for data persistence
  * 
  * @author Senior Full-Stack Engineer
- * @version 1.0.0
+ * @version 2.0.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaSearch, FaFilter, FaSpinner, FaExclamationTriangle, FaTasks } from 'react-icons/fa';
+import React, { useCallback, useEffect, useState } from 'react';
+import { FaExclamationTriangle, FaFilter, FaSearch, FaSpinner, FaTasks } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
+import { taskAPI } from '../../utils/api';
 
 const TaskFilter = () => {
   // State management with proper initialization
   const [tasks, setTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
@@ -35,110 +36,46 @@ const TaskFilter = () => {
     incomplete: 0
   });
 
+  const { isAuthenticated } = useAuth();
+
   /**
-   * Load tasks from localStorage
-   * Uses localStorage for cross-component data sharing
+   * Load tasks from server API
+   */
+  const loadTasks = useCallback(async (currentFilters = filters) => {
+    if (!isAuthenticated) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await taskAPI.getTasks(currentFilters);
+      
+      if (response.success) {
+        setTasks(response.data);
+        setCounts(response.counts);
+      } else {
+        throw new Error(response.message || 'Failed to load tasks');
+      }
+    } catch (err) {
+      console.error('Error loading tasks:', err);
+      setError(err.message || 'Failed to load tasks. Please try again later.');
+      setTasks([]);
+      setCounts({ all: 0, complete: 0, incomplete: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, filters]);
+
+  /**
+   * Load tasks on component mount and when authentication status changes
    */
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        // Simulate network delay for realistic UX
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Get tasks from localStorage
-        const storedTasks = localStorage.getItem('tasks');
-        
-        if (storedTasks) {
-          const parsedTasks = JSON.parse(storedTasks);
-          setTasks(parsedTasks);
-          
-          // Apply initial filtering
-          applyFilters(parsedTasks, filters);
-          
-          // Calculate counts
-          updateCounts(parsedTasks);
-        } else {
-          // Initialize with empty array if no tasks exist
-          setTasks([]);
-          setFilteredTasks([]);
-        }
-        
-        setError(null);
-      } catch (err) {
-        console.error('Error loading tasks:', err);
-        setError('Failed to load tasks. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTasks();
-    
-    // Set up event listener for storage changes from other components
-    const handleStorageChange = (e) => {
-      if (e.key === 'tasks') {
-        try {
-          const updatedTasks = JSON.parse(e.newValue || '[]');
-          setTasks(updatedTasks);
-          applyFilters(updatedTasks, filters);
-          updateCounts(updatedTasks);
-        } catch (err) {
-          console.error('Error parsing tasks from storage:', err);
-        }
-      }
-    };
-    
-    // Add event listener for storage changes
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Clean up event listener on component unmount
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  /**
-   * Update task counts by status
-   * 
-   * @param {Array} taskList - List of tasks to count
-   */
-  const updateCounts = (taskList) => {
-    const completeTasks = taskList.filter(task => task.status === 'complete').length;
-    const incompleteTasks = taskList.filter(task => task.status === 'incomplete').length;
-    
-    setCounts({
-      all: taskList.length,
-      complete: completeTasks,
-      incomplete: incompleteTasks
-    });
-  };
-
-  /**
-   * Apply filters to tasks based on current filter settings
-   * Memoized with useCallback to prevent unnecessary re-renders
-   * 
-   * @param {Array} taskList - List of tasks to filter
-   * @param {Object} filterSettings - Current filter settings
-   */
-  const applyFilters = useCallback((taskList, filterSettings) => {
-    let result = [...taskList];
-    
-    // Apply status filter
-    if (filterSettings.status !== 'all') {
-      result = result.filter(task => task.status === filterSettings.status);
-    }
-    
-    // Apply search filter
-    if (filterSettings.search.trim()) {
-      const searchTerm = filterSettings.search.toLowerCase().trim();
-      result = result.filter(task => 
-        task.title.toLowerCase().includes(searchTerm) || 
-        task.description.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    setFilteredTasks(result);
-  }, []);
+  }, [loadTasks]);
 
   /**
    * Handle filter changes
@@ -146,22 +83,68 @@ const TaskFilter = () => {
    * @param {string} filterType - Type of filter to change
    * @param {string} value - New filter value
    */
-  const handleFilterChange = (filterType, value) => {
+  const handleFilterChange = async (filterType, value) => {
     const newFilters = {
       ...filters,
       [filterType]: value
     };
     
     setFilters(newFilters);
-    applyFilters(tasks, newFilters);
+    
+    // Reload tasks with new filters
+    await loadTasks(newFilters);
   };
+
+  /**
+   * Handle task status toggle
+   * 
+   * @param {string} taskId - ID of the task to toggle
+   */
+  const handleToggleStatus = async (taskId) => {
+    try {
+      const response = await taskAPI.toggleTaskStatus(taskId);
+      
+      if (response.success) {
+        // Reload tasks to reflect the change
+        await loadTasks();
+      } else {
+        throw new Error(response.message || 'Failed to update task status');
+      }
+    } catch (err) {
+      console.error('Error toggling task status:', err);
+      setError(err.message || 'Failed to update task status');
+    }
+  };
+
+  /**
+   * Reset filters to default values
+   */
+  const resetFilters = async () => {
+    const defaultFilters = { status: 'all', search: '' };
+    setFilters(defaultFilters);
+    await loadTasks(defaultFilters);
+  };
+
+  // Show authentication message if not logged in
+  if (!isAuthenticated) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow">
+        <div className="text-center py-8 text-gray-500">
+          <FaTasks className="mx-auto text-4xl mb-4" />
+          <p>Please log in to view and filter your tasks.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center" aria-live="polite" role="status">
-        <FaSpinner className="animate-spin text-blue-500 text-2xl" aria-hidden="true" />
-        <span className="ml-2">Loading tasks...</span>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <div className="flex justify-center items-center py-8" aria-live="polite" role="status">
+          <FaSpinner className="animate-spin text-blue-500 text-2xl" aria-hidden="true" />
+          <span className="ml-2">Loading tasks...</span>
+        </div>
       </div>
     );
   }
@@ -169,9 +152,19 @@ const TaskFilter = () => {
   // Error state
   if (error) {
     return (
-      <div className="p-6 text-red-500 flex items-center" aria-live="assertive" role="alert">
-        <FaExclamationTriangle className="mr-2" aria-hidden="true" />
-        <span>{error}</span>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <div className="text-red-500 flex items-center py-8" aria-live="assertive" role="alert">
+          <FaExclamationTriangle className="mr-2" aria-hidden="true" />
+          <div>
+            <p>{error}</p>
+            <button
+              onClick={() => loadTasks()}
+              className="mt-2 px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -231,37 +224,46 @@ const TaskFilter = () => {
       
       {/* Results count */}
       <div className="mb-4 text-sm text-gray-500">
-        Showing {filteredTasks.length} of {tasks.length} tasks
+        Showing {tasks.length} of {counts.all} tasks
       </div>
       
       {/* Task list */}
-      {filteredTasks.length === 0 ? (
+      {tasks.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           <p>No tasks match your filters</p>
           <button
             className="mt-2 px-4 py-2 text-sm text-blue-600 hover:text-blue-800"
-            onClick={() => {
-              const resetFilters = { status: 'all', search: '' };
-              setFilters(resetFilters);
-              applyFilters(tasks, resetFilters);
-            }}
+            onClick={resetFilters}
           >
             Reset Filters
           </button>
         </div>
       ) : (
         <ul className="divide-y divide-gray-200">
-          {filteredTasks.map((task) => (
+          {tasks.map((task) => (
             <li key={task._id} className="py-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className={`text-lg font-medium ${task.status === 'complete' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                    {task.title}
-                  </h3>
-                  <p className={`mt-1 text-sm ${task.status === 'complete' ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="flex items-center mb-2">
+                    <button
+                      onClick={() => handleToggleStatus(task._id)}
+                      className={`mr-3 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        task.status === 'complete'
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : 'border-gray-300 hover:border-green-400'
+                      }`}
+                      aria-label={`Mark task as ${task.status === 'complete' ? 'incomplete' : 'complete'}`}
+                    >
+                      {task.status === 'complete' && '✓'}
+                    </button>
+                    <h3 className={`text-lg font-medium ${task.status === 'complete' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                      {task.title}
+                    </h3>
+                  </div>
+                  <p className={`ml-8 text-sm ${task.status === 'complete' ? 'text-gray-400' : 'text-gray-600'}`}>
                     {task.description}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="ml-8 mt-2 flex flex-wrap gap-2">
                     <span 
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         task.status === 'complete' 

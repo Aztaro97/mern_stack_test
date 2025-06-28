@@ -12,7 +12,7 @@
 //   // const [users, setUsers] = useState([]);
 //   const [user, setUsers] = useState([]);
 //   useEffect(() => {
-//     fetch("http://localhost:5000/admin/users") // Backend API
+//     fetch("http://localhost:5050/admin/users") // Backend API
 //       .then((res) => res.json())
 //       .then((data) => {
 //         const sortedUsers = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

@@ -58,40 +58,86 @@ export const authAPI = {
 };
 
 /**
- * Generic data fetcher
- */
-export const fetchData = async (url) => {
-  const response = await fetch(url);
-  return response.json();
-};
-
-/**
- * Task API calls (if needed)
+ * Task API calls
  */
 export const taskAPI = {
-  fetchTasks: async () => {
-    return apiRequest("/api/tasks");
+  // Get all tasks with optional filtering
+  getTasks: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (filters.status && filters.status !== 'all') {
+      queryParams.append('status', filters.status);
+    }
+    
+    if (filters.search && filters.search.trim()) {
+      queryParams.append('search', filters.search.trim());
+    }
+    
+    if (filters.priority) {
+      queryParams.append('priority', filters.priority);
+    }
+    
+    const queryString = queryParams.toString();
+    const url = `/api/tasks${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest(url);
   },
 
-  createTask: async (task) => {
+  // Get a specific task by ID
+  getTask: async (id) => {
+    return apiRequest(`/api/tasks/${id}`);
+  },
+
+  // Create a new task
+  createTask: async (taskData) => {
     return apiRequest("/api/tasks", {
       method: "POST",
-      body: JSON.stringify(task),
+      body: JSON.stringify(taskData),
     });
   },
 
-  updateTask: async (id, updates) => {
+  // Update a task
+  updateTask: async (id, updateData) => {
     return apiRequest(`/api/tasks/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(updates),
+      method: "PUT",
+      body: JSON.stringify(updateData),
     });
   },
 
+  // Toggle task completion status
+  toggleTaskStatus: async (id) => {
+    return apiRequest(`/api/tasks/${id}/status`, {
+      method: "PATCH",
+    });
+  },
+
+  // Update task progress
+  updateTaskProgress: async (id, progress) => {
+    return apiRequest(`/api/tasks/${id}/progress`, {
+      method: "PATCH",
+      body: JSON.stringify({ progress }),
+    });
+  },
+
+  // Delete a task
   deleteTask: async (id) => {
     return apiRequest(`/api/tasks/${id}`, {
       method: "DELETE",
     });
   },
+
+  // Get task statistics
+  getTaskStats: async () => {
+    return apiRequest("/api/tasks/stats/summary");
+  },
+};
+
+/**
+ * Generic data fetcher
+ */
+export const fetchData = async (url) => {
+  const response = await fetch(url);
+  return response.json();
 };
 
 export default apiRequest;

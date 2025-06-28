@@ -71,12 +71,18 @@ router.post("/register", async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign(
-            { userId: user._id, role: user.role },
+            { userId: user._id, role: user.role, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "24h" }
         );
 
-        res.status(201).json({ message: "User registered successfully", token });
+        res.status(201).json({ 
+            message: "User registered successfully", 
+            token,
+            role: user.role,
+            fullName: user.fullName,
+            email: user.email
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error", error });
@@ -102,12 +108,18 @@ router.post("/login", async (req, res) => {
         }
         // Generate JWT token
         const token = jwt.sign(
-            { userId: user._id, role: user.role },
+            { userId: user._id, role: user.role, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "24h" }
         );
 
-        res.json({ message: "Login successful", token, role: user.role });
+        res.json({ 
+            message: "Login successful", 
+            token, 
+            role: user.role,
+            fullName: user.fullName,
+            email: user.email
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error", error });

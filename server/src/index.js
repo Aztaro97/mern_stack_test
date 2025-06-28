@@ -6,6 +6,8 @@ const User = require("./models/User");
 const bodyParser = require("body-parser");
 const authRoutes = require('./routes/authRoutes');
 const forgotPassRoutes = require("./routes/forgetPasswordRoute");
+const taskRoutes = require('./routes/taskRoutes');
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -14,6 +16,7 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use("/api", forgotPassRoutes);
+app.use('/api/tasks', taskRoutes);
 const PORT = process.env.PORT || 5050;
 
 const mongoURI = process.env.MONGO_URI;
@@ -22,14 +25,14 @@ if (!mongoURI) {
     process.exit(1);
 }
 app.listen(PORT,()=>{
-    console.log("server started");
+    console.log(`Server started on port ${PORT}`);
 })
 mongoose.connect(mongoURI)
     .then(() => console.log(" Connected to MongoDB!"))
     .catch(err => console.error(" Database connection failed:", err));
 
 app.get("/",(req,res)=>{
-    res.send("hello worldji!!")
+    res.json({ message: "TaskFlow API Server is running!", endpoints: ["/api/auth", "/api/tasks"] });
 })
 const adminRoutes = require("./routes/admindash");
 app.use("/admin", adminRoutes);
